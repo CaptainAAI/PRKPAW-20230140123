@@ -1,12 +1,12 @@
 // 1. Ganti sumber data dari array ke model Sequelize
-const { Presensi } = require("../models");
+const { Presensi, User } = require("../models");
 const { format } = require("date-fns-tz");
 const timeZone = "Asia/Jakarta";
 
 exports.CheckIn = async (req, res) => {
   // 2. Gunakan try...catch untuk error handling
   try {
-    const { id: userId, nama: userName } = req.user;
+  const { id: userId } = req.user;
     const waktuSekarang = new Date();
 
     // 3. Ubah cara mencari data menggunakan 'findOne' dari Sequelize
@@ -20,17 +20,23 @@ exports.CheckIn = async (req, res) => {
         .json({ message: "Anda sudah melakukan check-in hari ini." });
     }
 
-    // 4. Ubah cara membuat data baru menggunakan 'create' dari Sequelize
+    // 4. Buat data baru tanpa menyimpan nama (nama akan diambil via relasi User)
     const newRecord = await Presensi.create({
       userId: userId,
-      nama: userName,
       checkIn: waktuSekarang,
     });
 
+    // Ambil kembali record beserta relasi User untuk mendapatkan nama
+    const recordWithUser = await Presensi.findByPk(newRecord.id, {
+      include: [{ model: User, as: "user", attributes: ["id", "nama", "email"] }],
+    });
+
+    const userName = recordWithUser.user ? recordWithUser.user.nama : "Pengguna";
+
     const formattedData = {
-      userId: newRecord.userId,
-      nama: newRecord.nama,
-      checkIn: format(newRecord.checkIn, "yyyy-MM-dd HH:mm:ssXXX", { timeZone }),
+      userId: recordWithUser.userId,
+      nama: userName,
+      checkIn: format(recordWithUser.checkIn, "yyyy-MM-dd HH:mm:ssXXX", { timeZone }),
       checkOut: null,
     };
 
@@ -53,12 +59,13 @@ exports.CheckIn = async (req, res) => {
 exports.CheckOut = async (req, res) => {
   // Gunakan try...catch
   try {
-    const { id: userId, nama: userName } = req.user;
+    const { id: userId } = req.user;
     const waktuSekarang = new Date();
 
-    // Cari data di database
+    // Cari data di database dan sertakan User agar bisa tampilkan nama
     const recordToUpdate = await Presensi.findOne({
       where: { userId: userId, checkOut: null },
+      include: [{ model: User, as: "user", attributes: ["id", "nama"] }],
     });
 
     if (!recordToUpdate) {
@@ -71,19 +78,17 @@ exports.CheckOut = async (req, res) => {
     recordToUpdate.checkOut = waktuSekarang;
     await recordToUpdate.save();
 
+    const userName = recordToUpdate.user ? recordToUpdate.user.nama : undefined;
+
     const formattedData = {
       userId: recordToUpdate.userId,
-      nama: recordToUpdate.nama,
-      checkIn: format(recordToUpdate.checkIn, "yyyy-MM-dd HH:mm:ssXXX", {
-        timeZone,
-      }),
-      checkOut: format(recordToUpdate.checkOut, "yyyy-MM-dd HH:mm:ssXXX", {
-        timeZone,
-      }),
+      nama: userName,
+      checkIn: format(recordToUpdate.checkIn, "yyyy-MM-dd HH:mm:ssXXX", { timeZone }),
+      checkOut: format(recordToUpdate.checkOut, "yyyy-MM-dd HH:mm:ssXXX", { timeZone }),
     };
 
     res.json({
-      message: `Selamat jalan ${userName}, check-out Anda berhasil pada pukul ${format(
+      message: `Selamat jalan ${userName || "Pengguna"}, check-out Anda berhasil pada pukul ${format(
         waktuSekarang,
         "HH:mm:ss",
         { timeZone }
@@ -128,9 +133,9 @@ exports.deletePresensi = async (req, res) => {
 exports.updatePresensi = async (req, res) => {
   try {
     const presensiId = req.params.id;
-    const { checkIn, checkOut, nama } = req.body;
+    const { checkIn, checkOut } = req.body;
 
-    if (checkIn === undefined && checkOut === undefined && nama === undefined) {
+    if (checkIn === undefined && checkOut === undefined) {
       return res.status(400).json({
         message:
           "Request body tidak berisi data yang valid untuk diupdate (checkIn, checkOut, atau nama).",
@@ -146,7 +151,6 @@ exports.updatePresensi = async (req, res) => {
 
     recordToUpdate.checkIn = checkIn || recordToUpdate.checkIn;
     recordToUpdate.checkOut = checkOut || recordToUpdate.checkOut;
-    recordToUpdate.nama = nama || recordToUpdate.nama;
 
     await recordToUpdate.save();
 

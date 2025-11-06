@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Migrasi: buat tabel Presensis dengan relasi ke Users
+    // Create Presensis table if it doesn't exist
     await queryInterface.createTable('Presensis', {
       id: {
         allowNull: false,
@@ -38,8 +38,8 @@ module.exports = {
       },
     });
   },
+
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('Presensis');
-  }
+  },
 };
-
