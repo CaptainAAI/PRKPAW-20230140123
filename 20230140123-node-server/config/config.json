@@ -1,21 +1,21 @@
 {
   "development": {
     "username": "root",
-    "password": ":4GuNg210105182040",
+    "password": ":4GuNg210105",
     "database": "prkpaw",
     "host": "127.0.0.1",
     "dialect": "mysql"
   },
   "test": {
     "username": "root",
-    "password": ":4GuNg210105182040",
+    "password": ":4GuNg210105",
     "database": "database_test",
     "host": "127.0.0.1",
     "dialect": "mysql"
   },
   "production": {
     "username": "root",
-    "password": ":4GuNg210105182040",
+    "password": ":4GuNg210105",
     "database": "database_production",
     "host": "127.0.0.1",
     "dialect": "mysql"
