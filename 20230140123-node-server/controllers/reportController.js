@@ -1,16 +1,25 @@
 const presensiRecords = require("../data/presensiData");
-const { Presensi } = require("../models");
+const { Presensi, User } = require("../models");
 const { Op } = require("sequelize");
 
 exports.getDailyReport = async (req, res) => {
   try {
     const { nama, tanggalMulai, tanggalSelesai } = req.query;
-    let options = { where: {} };
+    let options = { 
+      where: {},
+      include: [{ 
+        model: User, 
+        as: "user", 
+        attributes: ["id", "nama", "email"]
+      }]
+    };
 
-    // Filter by nama if provided
+    // Filter by nama if provided (search in User table)
     if (nama) {
-      options.where.nama = {
-        [Op.like]: `%${nama}%`,
+      options.include[0].where = {
+        nama: {
+          [Op.like]: `%${nama}%`,
+        }
       };
     }
 
