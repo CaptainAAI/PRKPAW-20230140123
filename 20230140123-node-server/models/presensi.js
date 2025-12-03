@@ -26,6 +26,14 @@ module.exports = (sequelize, DataTypes) => {
     checkOut: {
       type: DataTypes.DATE,
       allowNull: true, // Boleh null
+    },
+    latitude: {
+      type: DataTypes.DECIMAL(10, 8),
+      allowNull: true, // Boleh null jika izin lokasi ditolak
+    },
+    longitude: {
+      type: DataTypes.DECIMAL(11, 8),
+      allowNull: true,
     }
   }, {
     sequelize,

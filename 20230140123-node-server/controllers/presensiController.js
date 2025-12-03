@@ -4,12 +4,12 @@ const { format } = require("date-fns-tz");
 const timeZone = "Asia/Jakarta";
 
 exports.CheckIn = async (req, res) => {
-  // 2. Gunakan try...catch untuk error handling
   try {
-  const { id: userId } = req.user;
+    const { id: userId } = req.user;
+    const { latitude, longitude } = req.body; // <-- Ambil data lokasi
     const waktuSekarang = new Date();
 
-    // 3. Ubah cara mencari data menggunakan 'findOne' dari Sequelize
+    // Validasi & check existing record
     const existingRecord = await Presensi.findOne({
       where: { userId: userId, checkOut: null },
     });
@@ -20,10 +20,12 @@ exports.CheckIn = async (req, res) => {
         .json({ message: "Anda sudah melakukan check-in hari ini." });
     }
 
-    // 4. Buat data baru tanpa menyimpan nama (nama akan diambil via relasi User)
+    // Buat data baru dengan menyimpan latitude dan longitude
     const newRecord = await Presensi.create({
       userId: userId,
       checkIn: waktuSekarang,
+      latitude: latitude, // <-- Simpan ke database
+      longitude: longitude, // <-- Simpan ke database
     });
 
     // Ambil kembali record beserta relasi User untuk mendapatkan nama
