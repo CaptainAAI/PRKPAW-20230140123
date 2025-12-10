@@ -1,12 +1,36 @@
 // 1. Ganti sumber data dari array ke model Sequelize
 const { Presensi, User } = require("../models");
 const { format } = require("date-fns-tz");
+const multer = require("multer");
+const path = require("path");
 const timeZone = "Asia/Jakarta";
+
+// Konfigurasi multer untuk upload foto
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); 
+  },
+  filename: (req, file, cb) => {
+    // Format nama file: userId-timestamp.jpg
+    cb(null, `${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Hanya file gambar yang diperbolehkan!'), false);
+  }
+};
+
+exports.upload = multer({ storage: storage, fileFilter: fileFilter });
 
 exports.CheckIn = async (req, res) => {
   try {
     const { id: userId } = req.user;
     const { latitude, longitude } = req.body; // <-- Ambil data lokasi
+    const buktiFoto = req.file ? req.file.path : null; // <-- Ambil path foto
     const waktuSekarang = new Date();
 
     // Validasi & check existing record
@@ -20,12 +44,13 @@ exports.CheckIn = async (req, res) => {
         .json({ message: "Anda sudah melakukan check-in hari ini." });
     }
 
-    // Buat data baru dengan menyimpan latitude dan longitude
+    // Buat data baru dengan menyimpan latitude, longitude, dan foto
     const newRecord = await Presensi.create({
       userId: userId,
       checkIn: waktuSekarang,
       latitude: latitude, // <-- Simpan ke database
       longitude: longitude, // <-- Simpan ke database
+      buktiFoto: buktiFoto // <-- Simpan path foto
     });
 
     // Ambil kembali record beserta relasi User untuk mendapatkan nama
