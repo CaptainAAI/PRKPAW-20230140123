@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const app = express();
 const PORT = 3001;
 const morgan = require("morgan");
@@ -14,6 +15,10 @@ const authRoutes = require("./routes/auth");
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+
+// Static folder untuk uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   next();
