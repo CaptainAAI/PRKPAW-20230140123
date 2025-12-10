@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import Webcam from 'react-webcam';
 import 'leaflet/dist/leaflet.css';
 
 // Fix untuk icon marker Leaflet
@@ -25,9 +26,17 @@ function PresensiPage() {
   const [loadingIn, setLoadingIn] = useState(false);
   const [loadingOut, setLoadingOut] = useState(false);
   const [coords, setCoords] = useState(null); // {lat, lng}
+  const [image, setImage] = useState(null); // Simpan foto
+  const webcamRef = useRef(null); // Referensi webcam
 
   const getToken = () =>
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  // Fungsi untuk capture foto dari webcam
+  const capture = useCallback(() => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setImage(imageSrc);
+  }, [webcamRef]);
 
   // Fungsi untuk mendapatkan lokasi pengguna
   const getLocation = () => {
@@ -59,25 +68,38 @@ function PresensiPage() {
       setError("Lokasi belum didapatkan. Mohon izinkan akses lokasi.");
       return;
     }
+
+    if (!image) {
+      setError("Foto wajib ada! Silakan ambil foto terlebih dahulu.");
+      return;
+    }
     
     setError("");
     setMessage("");
     setLoadingIn(true);
     
     try {
+      // Convert base64 image ke blob
+      const blob = await (await fetch(image)).blob();
+      
+      // Buat FormData untuk mengirim file
+      const formData = new FormData();
+      formData.append('latitude', coords.lat);
+      formData.append('longitude', coords.lng);
+      formData.append('image', blob, 'selfie.jpg'); // Field name harus 'image' sesuai multer
+      
       const response = await axios.post(
         "http://localhost:3001/api/presensi/check-in",
-        {
-          latitude: coords.lat, // <-- Data dikirim ke backend
-          longitude: coords.lng // <-- Data dikirim ke backend
-        },
+        formData,
         {
           headers: {
             Authorization: `Bearer ${getToken()}`,
+            'Content-Type': 'multipart/form-data' // Multer akan handle ini
           },
         }
       );
       setMessage(response.data.message);
+      setImage(null); // Reset foto
     } catch (err) {
       setError(
         err.response ? err.response.data.message : "Check-in gagal. Coba lagi."
@@ -148,6 +170,39 @@ function PresensiPage() {
             </MapContainer>
           </div>
         )}
+
+        {/* Webcam untuk Selfie */}
+        <div className="my-4 border rounded-lg overflow-hidden bg-black w-full max-w-md shadow-lg">
+          {image ? (
+            <img src={image} alt="Selfie" className="w-full h-80 object-cover" />
+          ) : (
+            <Webcam
+              audio={false}
+              ref={webcamRef}
+              screenshotFormat="image/jpeg"
+              className="w-full h-80 object-cover"
+            />
+          )}
+        </div>
+
+        {/* Tombol Ambil/Ulang Foto */}
+        <div className="w-full max-w-md">
+          {!image ? (
+            <button
+              onClick={capture}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold transition"
+            >
+              📸 Ambil Foto
+            </button>
+          ) : (
+            <button
+              onClick={() => setImage(null)}
+              className="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-lg font-semibold transition"
+            >
+              🔄 Foto Ulang
+            </button>
+          )}
+        </div>
 
         {/* Card Check In dan Check Out */}
         <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
