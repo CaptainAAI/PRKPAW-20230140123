@@ -11,6 +11,7 @@ function ReportPage() {
   const [tanggalMulai, setTanggalMulai] = useState("");
   const [tanggalSelesai, setTanggalSelesai] = useState("");
   const [month, setMonth] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null); // State untuk modal foto
 
   const buildQueryParams = () => {
     const params = new URLSearchParams();
@@ -170,6 +171,9 @@ function ReportPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Check-Out
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Bukti Foto
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -191,12 +195,28 @@ function ReportPage() {
                           })
                         : "Belum Check-Out"}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {presensi.buktiFoto ? (
+                        <button
+                          onClick={() => setSelectedImage(`http://localhost:3001/${presensi.buktiFoto}`)}
+                          className="relative inline-block"
+                        >
+                          <img
+                            src={`http://localhost:3001/${presensi.buktiFoto}`}
+                            alt="Bukti Foto"
+                            className="h-12 w-12 object-cover rounded cursor-pointer hover:opacity-75 transition"
+                          />
+                        </button>
+                      ) : (
+                        <span className="text-gray-400">Tidak ada foto</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td
-                    colSpan="3"
+                    colSpan="4"
                     className="px-6 py-4 text-center text-gray-500"
                   >
                     Tidak ada data yang ditemukan.
@@ -205,6 +225,28 @@ function ReportPage() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Modal untuk menampilkan foto fullscreen */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-2xl max-h-screen" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 bg-white rounded-full p-2 hover:bg-gray-200 transition"
+            >
+              ✕
+            </button>
+            <img
+              src={selectedImage}
+              alt="Bukti Foto Fullscreen"
+              className="max-w-full max-h-screen object-contain"
+            />
+          </div>
         </div>
       )}
       </div>
